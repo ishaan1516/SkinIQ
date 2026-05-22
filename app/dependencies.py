@@ -3,7 +3,10 @@ from supabase import create_client, Client
 from app.config import get_settings
 
 settings = get_settings()
-supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+
+def get_supabase() -> Client:
+    """Lazily create Supabase client to avoid errors with placeholder credentials during startup."""
+    return create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
 
 async def get_current_user(authorization: str = Header(None)):
     """
@@ -12,10 +15,11 @@ async def get_current_user(authorization: str = Header(None)):
     """
     if not authorization or not authorization.startswith('Bearer '):
         raise HTTPException(status_code=401, detail='Not authenticated. Bearer token missing.')
-    
+
     token = authorization.split(' ')[1]
-    
+
     try:
+        supabase = get_supabase()
         # Supabase validates the JWT and fetches the user securely
         user_response = supabase.auth.get_user(token)
         if not user_response.user:

@@ -17,7 +17,9 @@ from fastapi import UploadFile
 ANALYSIS_CACHE: Dict[str, Dict] = {}
 CACHE_TTL = 30 * 60
 
-analysis_repo = AnalysisRepository()
+def get_analysis_repo():
+    """Lazily create repository to avoid Supabase initialization errors at startup."""
+    return AnalysisRepository()
 
 
 def _cleanup_expired_cache():
@@ -91,6 +93,7 @@ async def submit_qa_step(analysis_id: str, qa_responses: dict, user_id: str) -> 
         summary = await generate_clinical_summary(final_scores, qa_responses)
 
         # Persist the complete analysis to Supabase
+        analysis_repo = get_analysis_repo()
         saved_record = analysis_repo.create_analysis(
             user_id=user_id,
             final_scores=final_scores,
